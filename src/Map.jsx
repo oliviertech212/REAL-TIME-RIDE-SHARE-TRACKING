@@ -4,6 +4,7 @@ import {
   useJsApiLoader,
   Marker,
   Autocomplete,
+  DirectionsRenderer,
 } from "@react-google-maps/api";
 const center = {
   lat: -1.9578755,
@@ -25,6 +26,44 @@ const Map = (props) => {
   });
 
   const [map, setMap] = React.useState(null);
+  const [directionsRes, setDirectionsRes] = React.useState(null);
+  const [distance, setDistance] = React.useState(null);
+  const [duration, setDuration] = React.useState(null);
+
+  const originRef = React.useRef(null);
+  const destinationRef = React.useRef(null);
+
+  const calculateRoute = () => {
+    if (originRef.current.value === "" && destinationRef.current.value === "") {
+      return;
+    }
+
+    const directionsService = new window.google.maps.DirectionsService();
+    directionsService.route(
+      {
+        origin: originRef.current.value,
+        destination: destinationRef.current.value,
+        travelMode: window.google.maps.TravelMode.DRIVING,
+      },
+      (result, status) => {
+        if (status === window.google.maps.DirectionsStatus.OK) {
+          setDirectionsRes(result);
+          setDistance(result.routes[0].legs[0].distance.text);
+          setDuration(result.routes[0].legs[0].duration.text);
+        } else {
+          console.error(`error fetching directions ${result}`);
+        }
+      }
+    );
+  };
+
+  const clearRoute = () => {
+    setDirectionsRes(null);
+    setDistance(null);
+    setDuration(null);
+    originRef.current.value = "";
+    destinationRef.current.value = "";
+  };
 
   // console.log("api key", process.env.REACT_APP_GOOGLE_MAPS_API_KEY);
   if (loadError) {
@@ -35,7 +74,7 @@ const Map = (props) => {
     return <div>Loading maps</div>;
   }
 
-  console.log("Google Maps API loaded successfully", props);
+  console.log("Google Maps API loaded successfully", props.currentLocation);
   return (
     <>
       <div className=" relativew-[100vw] h-[100vh] bg-white">
@@ -50,6 +89,9 @@ const Map = (props) => {
             }}
           >
             <Marker position={props.currentLocation} />
+
+            {/* display direction responses */}
+            {directionsRes && <DirectionsRenderer directions={directionsRes} />}
           </GoogleMap>
         </div>
 
@@ -59,24 +101,37 @@ const Map = (props) => {
         >
           <div className="flex   m-auto  ">
             <Autocomplete>
-              <input placeholder="origin" className="bg-grey p-1 border" />
+              <input
+                placeholder="origin"
+                className="bg-grey p-1 border"
+                ref={originRef}
+              />
             </Autocomplete>{" "}
             <Autocomplete>
               <input
                 placeholder="direction"
                 className="ml-2 p-1 bg-grey border"
+                ref={destinationRef}
               />
             </Autocomplete>
-            <button className="bg-[green] ml-2 p-1 rounded-md">
+            <button
+              className="bg-[green] ml-2 p-1 rounded-md"
+              onClick={calculateRoute}
+            >
               Calculate Route
             </button>
-            <button className="bg-[red] ml-2 px-3 rounded-md">X</button>
+            <button
+              className="bg-[red] ml-2 px-3 rounded-md"
+              onClick={clearRoute}
+            >
+              X
+            </button>
           </div>
 
           <div className="flex justify-between w-full p-5">
-            <h2>Distance : </h2>
+            <h2>Distance : {distance} </h2>
 
-            <h2>Duration : </h2>
+            <h2>Duration : {duration} </h2>
 
             <button
               className="bg-[red] ml-2 px-3  rounded-md"
