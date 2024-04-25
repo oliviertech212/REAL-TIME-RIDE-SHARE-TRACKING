@@ -1,5 +1,10 @@
 import React from "react";
-import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
+import {
+  GoogleMap,
+  useJsApiLoader,
+  Marker,
+  Autocomplete,
+} from "@react-google-maps/api";
 const center = {
   lat: -1.9578755,
   lng: 30.11273499999993,
@@ -7,8 +12,16 @@ const center = {
 
 const Map = (props) => {
   const { isLoaded, loadError } = useJsApiLoader({
-    id: "google-map-script",
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
+    libraries: [
+      "streetView",
+      "routes",
+      "places",
+      "geometry",
+      "drawing",
+      "visualization",
+      "localContext",
+    ],
   });
 
   const [map, setMap] = React.useState(null);
@@ -45,16 +58,18 @@ const Map = (props) => {
           w-1/2 border rounded-md h-52 m-auto flex flex-col items-center shadow-md bg-white"
         >
           <div className="flex   m-auto  ">
-            <input placeholder="origin" className="bg-grey p-1 border" />
-
-            <input
-              placeholder="direction"
-              className="ml-2 p-1 bg-grey border"
-            />
+            <Autocomplete>
+              <input placeholder="origin" className="bg-grey p-1 border" />
+            </Autocomplete>{" "}
+            <Autocomplete>
+              <input
+                placeholder="direction"
+                className="ml-2 p-1 bg-grey border"
+              />
+            </Autocomplete>
             <button className="bg-[green] ml-2 p-1 rounded-md">
               Calculate Route
             </button>
-
             <button className="bg-[red] ml-2 px-3 rounded-md">X</button>
           </div>
 
