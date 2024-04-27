@@ -48,14 +48,38 @@ const Map = (props) => {
             type: "transit_station",
           },
           (results, status) => {
-            console.log("results", results, status);
             if (status === google.maps.places.PlacesServiceStatus.OK) {
               // For each bus stop found
               results.forEach((place) => {
+                // Calculate the distance to the transit station
+                const distanceToStation =
+                  google.maps.geometry.spherical.computeDistanceBetween(
+                    new google.maps.LatLng(location),
+                    place.geometry.location
+                  );
+
+                // Calculate the time to reach the transit station
+                const timeToReach =
+                  (distanceToStation /
+                    directionsRes.routes[0].legs[0].distance.value) *
+                  directionsRes.routes[0].legs[0].duration.value;
+
+                console.log("timeToReach", timeToReach);
                 // Create a marker on the map
-                new google.maps.Marker({
+                const marker = new google.maps.Marker({
                   map,
                   position: place.geometry.location,
+                  title: `${place.name}: ${timeToReach} minutes`,
+                });
+
+                // Create an InfoWindow
+                const infoWindow = new google.maps.InfoWindow({
+                  content: `${place.name}: ${timeToReach} minutes`,
+                });
+
+                // Show the InfoWindow when the marker is clicked
+                marker.addListener("click", () => {
+                  infoWindow.open(map, marker);
                 });
               });
             }
@@ -75,13 +99,66 @@ const Map = (props) => {
       {
         origin: originRef.current.value,
         destination: destinationRef.current.value,
-        travelMode: window.google.maps.TravelMode.DRIVING,
+        travelMode: window.google.maps.TravelMode.TRANSIT,
       },
       async (result, status) => {
         if (status === window.google.maps.DirectionsStatus.OK) {
           setDirectionsRes(result);
           setDistance(result.routes[0].legs[0].distance.text);
           setDuration(result.routes[0].legs[0].duration.text);
+
+          // Find the closest upcoming transit station
+          let nextStation = null;
+          let minExtraTime = Number.MAX_VALUE;
+
+          for (const step of result.routes[0].legs[0].steps) {
+            const location = {
+              lat: step.start_location.lat(),
+              lng: step.start_location.lng(),
+            };
+            const placesService = new google.maps.places.PlacesService(map);
+            placesService.nearbySearch(
+              {
+                location: location,
+                radius: 100, // Search within a 100m radius
+                type: "transit_station",
+              },
+              (stations, status) => {
+                if (status === google.maps.places.PlacesServiceStatus.OK) {
+                  for (const station of stations) {
+                    // Perform directions request to estimate time to this station
+                    const directionsRequest = {
+                      origin: new google.maps.LatLng(
+                        navigator.geolocation.getCurrentPosition().coords.latitude,
+                        navigator.geolocation.getCurrentPosition().coords.longitude
+                      ),
+                      destination: station.geometry.location,
+                      travelMode: window.google.maps.TravelMode.TRANSIT,
+                    };
+                    directionsService.route(
+                      directionsRequest,
+                      (stationResult, status) => {
+                        if (status === google.maps.DirectionsStatus.OK) {
+                          const extraTime =
+                            stationResult.routes[0].legs[0].duration.value;
+                          if (extraTime < minExtraTime) {
+                            minExtraTime = extraTime;
+                            nextStation = station;
+                          }
+                        }
+                      }
+                    );
+                  }
+                }
+              }
+            );
+          }
+
+          // Update UI with details of the next station (if found)
+          if (nextStation) {
+            console.log("Next station:", nextStation.name);
+            // Display station name and estimated time on UI
+          }
         } else {
           console.error(`error fetching directions ${result}`);
         }
