@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   GoogleMap,
   useJsApiLoader,
@@ -28,6 +28,43 @@ const Map = (props) => {
   const originRef = React.useRef(null);
   const destinationRef = React.useRef(null);
 
+  useEffect(() => {
+    if (map && directionsRes && directionsRes.routes[0].legs[0].steps) {
+      // Assuming `map` is an instance of google.maps.Map
+      const placesService = new google.maps.places.PlacesService(map);
+
+      // For each waypoint in the route
+      directionsRes.routes[0].legs[0].steps.forEach((step) => {
+        // Search for bus stops near the waypoint
+        console.log("step", step.start_location);
+        const location = {
+          lat: step.start_location.lat(),
+          lng: step.start_location.lng(),
+        };
+        placesService.nearbySearch(
+          {
+            location: location,
+            radius: 100, // Search within a 500m radius
+            type: "transit_station",
+          },
+          (results, status) => {
+            console.log("results", results, status);
+            if (status === google.maps.places.PlacesServiceStatus.OK) {
+              // For each bus stop found
+              results.forEach((place) => {
+                // Create a marker on the map
+                new google.maps.Marker({
+                  map,
+                  position: place.geometry.location,
+                });
+              });
+            }
+          }
+        );
+      });
+    }
+  }, [map, directionsRes]);
+
   const calculateRoute = async () => {
     if (originRef.current.value === "" && destinationRef.current.value === "") {
       return;
@@ -45,39 +82,6 @@ const Map = (props) => {
           setDirectionsRes(result);
           setDistance(result.routes[0].legs[0].distance.text);
           setDuration(result.routes[0].legs[0].duration.text);
-
-          // Assuming `map` is an instance of google.maps.Map
-          const placesService = new google.maps.places.PlacesService(map);
-
-          // For each waypoint in the route
-          directionsRes.routes[0].legs[0].steps.forEach((step) => {
-            // Search for bus stops near the waypoint
-            console.log("step", step.start_location);
-            const location = {
-              lat: step.start_location.lat(),
-              lng: step.start_location.lng(),
-            };
-            placesService.nearbySearch(
-              {
-                location: location,
-                radius: 100, // Search within a 500m radius
-                type: "transit_station",
-              },
-              (results, status) => {
-                console.log("results", results, status);
-                if (status === google.maps.places.PlacesServiceStatus.OK) {
-                  // For each bus stop found
-                  results.forEach((place) => {
-                    // Create a marker on the map
-                    new google.maps.Marker({
-                      map,
-                      position: place.geometry.location,
-                    });
-                  });
-                }
-              }
-            );
-          });
         } else {
           console.error(`error fetching directions ${result}`);
         }
