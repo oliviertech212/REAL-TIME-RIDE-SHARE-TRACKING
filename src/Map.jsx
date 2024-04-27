@@ -9,7 +9,7 @@ import {
 
 const Map = (props) => {
   const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAP_API_KEY,
     libraries: [
       "streetView",
       "routes",
@@ -60,7 +60,7 @@ const Map = (props) => {
             placesService.nearbySearch(
               {
                 location: location,
-                radius: 200, // Search within a 500m radius
+                radius: 100, // Search within a 500m radius
                 type: "transit_station",
               },
               (results, status) => {
@@ -93,7 +93,6 @@ const Map = (props) => {
     destinationRef.current.value = "";
   };
 
-  console.log("api key", process.env.REACT_APP_GOOGLE_MAPS_API_KEY);
   if (loadError) {
     return <div>Error loading maps</div>;
   }
@@ -115,8 +114,62 @@ const Map = (props) => {
 
   return (
     <>
-      <div className=" relativew-[100vw] h-[100vh] bg-white">
-        <div className=" absolute top-0 bottom-0 left-0 right-0 h-[100%] w-[100%] ">
+      <div className="  md:flex w-[100vw] h-[100vh] bg-white">
+        <div
+          className=" z-50  relative
+         w-full md:w-1/4  border rounded-md  p-5   shadow-md  md:bg-white"
+        >
+          <div className="  w-full  m-auto  mt-3 ">
+            <div className=" flex md:flex-col space-x-1 md:space-x-0">
+              <Autocomplete>
+                <input
+                  placeholder="origin"
+                  className="bg-grey p-1 border-2 border-black w-full"
+                  ref={originRef}
+                />
+              </Autocomplete>{" "}
+              <Autocomplete>
+                <input
+                  placeholder="direction"
+                  className="md:mt-2 bg-grey p-1 border-2 border-black w-full"
+                  ref={destinationRef}
+                />
+              </Autocomplete>
+            </div>
+            <div>
+              <button
+                className="bg-blue-500 mt-2 p-1 rounded-md"
+                onClick={calculateRoute}
+              >
+                Calculate
+              </button>
+              <button
+                className="bg-[red] ml-2 px-3 py-1 rounded-md"
+                onClick={clearRoute}
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <div className=" w-full  mt-3 ">
+            <div className="flex w-full justify-between">
+              <h2>Distance : {distance} </h2>
+
+              <h2>Time : {duration} </h2>
+            </div>
+          </div>
+
+          <div className="my-3">
+            <button
+              className="bg-[grey] ml-0 px-3  absolute bottom-0 md:bottom-20  rounded-md"
+              onClick={() => map.panTo(props.currentLocation)}
+            >
+              Go to my location
+            </button>
+          </div>
+        </div>
+        <div className="  h-[100%] w-[100%] ">
           <GoogleMap
             mapContainerStyle={{ width: "100%", height: "100%" }}
             zoom={10}
@@ -131,53 +184,6 @@ const Map = (props) => {
             {/* display direction responses */}
             {directionsRes && <DirectionsRenderer directions={directionsRes} />}
           </GoogleMap>
-        </div>
-
-        <div
-          className=" z-50 fixed  left-1/2 transform  right-1/2
-          w-1/2 border rounded-md m-auto flex flex-col items-center shadow-md bg-white"
-        >
-          <div className="flex   m-auto  mt-3 ">
-            <Autocomplete>
-              <input
-                placeholder="origin"
-                className="bg-grey p-1 border"
-                ref={originRef}
-              />
-            </Autocomplete>{" "}
-            <Autocomplete>
-              <input
-                placeholder="direction"
-                className="ml-2 p-1 bg-grey border"
-                ref={destinationRef}
-              />
-            </Autocomplete>
-            <button
-              className="bg-[green] ml-2 p-1 rounded-md"
-              onClick={calculateRoute}
-            >
-              Calculate Route
-            </button>
-            <button
-              className="bg-[red] ml-2 px-3 rounded-md"
-              onClick={clearRoute}
-            >
-              X
-            </button>
-          </div>
-
-          <div className="flex justify-between w-full p-5">
-            <h2>Distance : {distance} </h2>
-
-            <h2>Duration : {duration} </h2>
-
-            <button
-              className="bg-[red] ml-2 px-3  rounded-md"
-              onClick={() => map.panTo(props.currentLocation)}
-            >
-              {">"}
-            </button>
-          </div>
         </div>
       </div>
     </>
