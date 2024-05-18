@@ -11,7 +11,7 @@ import {
 } from "@react-google-maps/api";
 // import { IoMenu } from "react-icons/io5";
 const libraries = ["places", "directions"];
-const stops = [
+let stops = [
   { lat: -1.939826787816454, lng: 30.0445426438232 },
   { lat: -1.9355377074007851, lng: 30.060163829002217 },
   { lat: -1.9358808342336546, lng: 30.08024820994666 },
@@ -30,6 +30,9 @@ const MyMap = () => {
   const [directions, setDirections] = useState(null);
   const [eta, setEta] = useState(null);
   const [nextStopName, setNextStopName] = useState("");
+  const [currentStopIndex, setCurrentStopIndex] = useState(0);
+  const [duration, setDuration] = useState(null);
+  const [distance, setDistance] = useState(null);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -42,6 +45,10 @@ const MyMap = () => {
       });
     }
   }, []);
+
+  if (currentLocation) {
+    stops[0] = currentLocation;
+  }
 
   const calculateDirection = async () => {
     var directionsService = new window.google.maps.DirectionsService();
@@ -57,8 +64,9 @@ const MyMap = () => {
       waypoints: waypoints,
       travelMode: "DRIVING",
 
-      provideRouteAlternatives: true,
-      unitSystem: google.maps.UnitSystem.IMPERIAL,
+      provideRouteAlternatives: false,
+      // unitSystem: google.maps.UnitSystem.IMPERIAL,
+      unitSystem: window.google.maps.UnitSystem.METRIC,
       // UnitSystem.METRIC
     };
 
@@ -68,7 +76,6 @@ const MyMap = () => {
         // Calculate time and distance between waypoints  in reatime base on current waypoint
         //   calculate and display estimated time between waypint
         setDirections(res);
-        getNextStopName();
       } else {
         console.error("Error fetching directions:", res.status);
       }
@@ -79,6 +86,7 @@ const MyMap = () => {
   const calculateEta = () => {
     if (directions && currentLocation) {
       const route = directions.routes[0];
+
       let totalDistance = 0;
       let totalDuration = 0;
       let currentIndex = 0;
@@ -88,6 +96,15 @@ const MyMap = () => {
         totalDistance += leg.distance.value;
         totalDuration += leg.duration.value;
 
+        console.log(
+          "leg",
+          leg,
+          "totalDistance",
+          totalDistance,
+          "totalDuration",
+          totalDuration
+        );
+
         if (
           currentLocation.lat === stops[i].lat &&
           currentLocation.lng === stops[i].lng
@@ -96,37 +113,38 @@ const MyMap = () => {
         }
       }
 
+      setNextStopName(route.legs[currentIndex].end_address);
+      setDuration(route.legs[currentIndex].duration.text);
+      setDistance(route.legs[currentIndex].distance.text);
+
+      // console.log(
+      //   "currentIndex",
+      //   currentIndex,
+      //   "routeggg",
+      //   route.legs,
+      //   "directions",
+      //   directions.routes
+      // );
+
       const remainingDistance = route.legs[currentIndex].distance.value;
       const remainingDuration = route.legs[currentIndex].duration.value;
       const averageSpeed = remainingDistance / remainingDuration;
+
+      console.log(
+        "averageSpeed",
+        averageSpeed,
+        "remainingDuration",
+        remainingDuration,
+        "remainingDistance",
+        remainingDistance
+      );
       const eta = remainingDuration / 60; // in minutes
 
       setEta(eta);
     }
   };
 
-  const getNextStopName = async () => {
-    if (directions && currentLocation) {
-      const geocoder = new window.google.maps.Geocoder();
-      const nextStopIndex = currentLocation.index + 1;
-      const nextStopCoords = stops[nextStopIndex];
-
-      try {
-        const res = await geocoder.geocode({
-          location: { lat: nextStopCoords.lat, lng: nextStopCoords.lng },
-        });
-
-        if (res.status === "OK" && res.results.length > 0) {
-          setNextStopName(res.results[0].formatted_address);
-        } else {
-          setNextStopName(nextStopCoords.name);
-        }
-      } catch (error) {
-        console.error("Error getting next stop name:", error);
-        setNextStopName(nextStopCoords.name);
-      }
-    }
-  };
+  console.log("duration", duration, "distance", distance);
 
   useEffect(() => {
     calculateDirection();
@@ -172,54 +190,26 @@ const MyMap = () => {
         </div>
       )}
       <div className="  bg-gradient-to-r from-cyan-300 to-green-500 hidden md:block relative w-full md:w-1/4 border rounded-md p-5 shadow-md md:bg-white">
-        <div className="w-full  font-bold  text-2xl space-x-3 flex m-auto mt-3 ">
-          <h2>Nyabugogo</h2> <span>-</span> <h2>Kimironko</h2>
-        </div>
-
-        <div className="w-full font-semibold mt-3 ">
-          <div className="flex w-full justify-between">
-            <h2>Next stop : </h2>
-          </div>
-          <div className="flex w-full justify-between">
-            <h2>Distance : </h2>
-            <h2>Time :</h2>
-          </div>
-        </div>
-
-        <div className="my-3"></div>
-
-        <div>ETA to next stop: </div>
-
         <div className="w-full font-semibold mt-3 ">
           <div className="flex w-full justify-between">
             <h2>Next stop:</h2>
-            <h2>{nextStopName || "Loading..."}</h2>
+            <h2>{nextStopName}</h2>
           </div>
           <div className="flex w-full justify-between">
             <h2>Distance:</h2>
-            <h2>
-              {
-                directions?.routes[0].legs[currentLocation?.index || 0].distance
-                  .text
-              }
-            </h2>
+            <h2>{distance}</h2>
           </div>
           <div className="flex w-full justify-between">
             <h2>Time:</h2>
-            <h2>
-              {
-                directions?.routes[0].legs[currentLocation?.index || 0].duration
-                  .text
-              }
-            </h2>
+            <h2>{duration}</h2>
           </div>
         </div>
 
         <div className="my-3"></div>
 
-        <div>
+        {/* <div>
           ETA to next stop: {eta ? `${eta.toFixed(2)} minutes` : "Loading..."}
-        </div>
+        </div> */}
       </div>
       <div className=" h-[100%] w-[100%]  ">
         <GoogleMap
