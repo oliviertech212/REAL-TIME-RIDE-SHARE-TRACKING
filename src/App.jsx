@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Map from "./Map";
+import Map2 from "./Map2";
+import MyMap from "./Map3";
 function App() {
   const [currentLocation, setCurrentLocation] = useState(null);
   useEffect(() => {
@@ -14,7 +16,11 @@ function App() {
   }, []);
   return (
     <div>
-      <Map currentLocation={currentLocation} />
+      {/* <Map currentLocation={currentLocation} /> */}
+
+      {/* // This is last one */}
+      <MyMap />
+      {/* <Map2 /> */}
     </div>
   );
 }

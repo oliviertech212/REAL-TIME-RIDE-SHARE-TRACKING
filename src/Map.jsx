@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   GoogleMap,
   useJsApiLoader,
@@ -25,69 +25,109 @@ const Map = (props) => {
   const [directionsRes, setDirectionsRes] = React.useState(null);
   const [distance, setDistance] = React.useState(null);
   const [duration, setDuration] = React.useState(null);
+  const [timeToNextStation, setTimeToNextStation] = useState(null);
   const originRef = React.useRef(null);
   const destinationRef = React.useRef(null);
 
-  useEffect(() => {
-    if (map && directionsRes && directionsRes.routes[0].legs[0].steps) {
-      // Assuming `map` is an instance of google.maps.Map
-      const placesService = new google.maps.places.PlacesService(map);
+  // useEffect(() => {
+  //   if (map && directionsRes && directionsRes.routes[0].legs[0].steps) {
+  //     // Assuming `map` is an instance of google.maps.Map
+  //     const placesService = new google.maps.places.PlacesService(map);
 
-      // For each waypoint in the route
-      directionsRes.routes[0].legs[0].steps.forEach((step) => {
-        // Search for bus stops near the waypoint
-        console.log("step", step.start_location);
-        const location = {
-          lat: step.start_location.lat(),
-          lng: step.start_location.lng(),
-        };
-        placesService.nearbySearch(
-          {
-            location: location,
-            radius: 100, // Search within a 500m radius
-            type: "transit_station",
-          },
-          (results, status) => {
-            if (status === google.maps.places.PlacesServiceStatus.OK) {
-              // For each bus stop found
-              results.forEach((place) => {
-                // Calculate the distance to the transit station
-                const distanceToStation =
-                  google.maps.geometry.spherical.computeDistanceBetween(
-                    new google.maps.LatLng(location),
-                    place.geometry.location
-                  );
+  //     // For each waypoint in the route
+  //     directionsRes.routes[0].legs[0].steps.forEach((step) => {
+  //       // Search for bus stops near the waypoint
+  //       console.log("step", step.start_location);
+  //       const location = {
+  //         lat: step.start_location.lat(),
+  //         lng: step.start_location.lng(),
+  //       };
+  //       placesService.nearbySearch(
+  //         {
+  //           location: location,
+  //           radius: 100, // Search within a 100m radius
+  //           type: "transit_station",
+  //         },
+  //         (results, status) => {
+  //           if (status === google.maps.places.PlacesServiceStatus.OK) {
+  //             // For each bus stop found
+  //             results.forEach((place) => {
+  //               // Create a marker on the map
+  //               new google.maps.Marker({
+  //                 map,
+  //                 position: place.geometry.location,
+  //                 // title: `${place.name}`,
+  //               });
+  //             });
+  //           }
+  //         }
+  //       );
+  //     });
+  //   }
+  // }, [map, directionsRes]);
 
-                // Calculate the time to reach the transit station
-                const timeToReach =
-                  (distanceToStation /
-                    directionsRes.routes[0].legs[0].distance.value) *
-                  directionsRes.routes[0].legs[0].duration.value;
+  // useEffect(() => {
+  //   if (map && directionsRes && directionsRes.routes[0].legs[0].steps) {
+  //     if (navigator.geolocation) {
+  //       navigator.geolocation.watchPosition((position) => {
+  //         const userLocation = {
+  //           lat: position.coords.latitude,
+  //           lng: position.coords.longitude,
+  //         };
+  //         const timeToNextStation = calculateTimeToNextStation(userLocation);
+  //         setTimeToNextStation(timeToNextStation);
+  //       });
+  //     }
+  //   }
+  // }, [map, directionsRes]);
 
-                console.log("timeToReach", timeToReach);
-                // Create a marker on the map
-                const marker = new google.maps.Marker({
-                  map,
-                  position: place.geometry.location,
-                  title: `${place.name}: ${timeToReach} minutes`,
-                });
+  // useEffect(() => {
+  //   if (map && directionsRes && directionsRes.routes[0].legs[0].steps) {
+  //     // Assuming `map` is an instance of google.maps.Map
+  //     const placesService = new google.maps.places.PlacesService(map);
 
-                // Create an InfoWindow
-                const infoWindow = new google.maps.InfoWindow({
-                  content: `${place.name}: ${timeToReach} minutes`,
-                });
+  //     // For each waypoint in the route
+  //     directionsRes.routes[0].legs[0].steps.forEach((step) => {
+  //       // Search for bus stops near the waypoint
+  //       console.log("step", step.start_location);
+  //       const location = {
+  //         lat: step.start_location.lat(),
+  //         lng: step.start_location.lng(),
+  //       };
+  //       placesService.nearbySearch(
+  //         {
+  //           location: location,
+  //           radius: 100, // Search within a 100m radius
+  //           type: "transit_station",
+  //         },
+  //         (results, status) => {
+  //           if (status === google.maps.places.PlacesServiceStatus.OK) {
+  //             // For each bus stop found
+  //             results.forEach((place) => {
+  //               // Create a marker on the map
+  //               new google.maps.Marker({
+  //                 map,
+  //                 position: place.geometry.location,
+  //                 // title: `${place.name}`,
+  //               });
+  //             });
+  //           }
+  //         }
+  //       );
+  //     });
 
-                // Show the InfoWindow when the marker is clicked
-                marker.addListener("click", () => {
-                  infoWindow.open(map, marker);
-                });
-              });
-            }
-          }
-        );
-      });
-    }
-  }, [map, directionsRes]);
+  //     if (navigator.geolocation) {
+  //       navigator.geolocation.watchPosition((position) => {
+  //         const userLocation = {
+  //           lat: position.coords.latitude,
+  //           lng: position.coords.longitude,
+  //         };
+  //         const timeToNextStation = calculateTimeToNextStation(userLocation);
+  //         setTimeToNextStation(timeToNextStation);
+  //       });
+  //     }
+  //   }
+  // }, [map, directionsRes]);
 
   const calculateRoute = async () => {
     if (originRef.current.value === "" && destinationRef.current.value === "") {
@@ -107,64 +147,91 @@ const Map = (props) => {
           setDistance(result.routes[0].legs[0].distance.text);
           setDuration(result.routes[0].legs[0].duration.text);
 
-          // Find the closest upcoming transit station
-          let nextStation = null;
-          let minExtraTime = Number.MAX_VALUE;
-
-          for (const step of result.routes[0].legs[0].steps) {
+          // Assuming `map` is an instance of google.maps.Map
+          const placesService = new google.maps.places.PlacesService(map);
+          // For each waypoint in the route
+          directionsRes.routes[0].legs[0].steps.forEach((step) => {
+            // Search for bus stops near the waypoint
+            console.log("step", step.start_location);
             const location = {
               lat: step.start_location.lat(),
               lng: step.start_location.lng(),
             };
-            const placesService = new google.maps.places.PlacesService(map);
             placesService.nearbySearch(
               {
                 location: location,
-                radius: 100, // Search within a 100m radius
+
+                radius: 100, // Search within a 500m radius
                 type: "transit_station",
               },
-              (stations, status) => {
+              (results, status) => {
+                console.log("results", results, status);
                 if (status === google.maps.places.PlacesServiceStatus.OK) {
-                  for (const station of stations) {
-                    // Perform directions request to estimate time to this station
-                    const directionsRequest = {
-                      origin: new google.maps.LatLng(
-                        navigator.geolocation.getCurrentPosition().coords.latitude,
-                        navigator.geolocation.getCurrentPosition().coords.longitude
-                      ),
-                      destination: station.geometry.location,
-                      travelMode: window.google.maps.TravelMode.TRANSIT,
-                    };
-                    directionsService.route(
-                      directionsRequest,
-                      (stationResult, status) => {
-                        if (status === google.maps.DirectionsStatus.OK) {
-                          const extraTime =
-                            stationResult.routes[0].legs[0].duration.value;
-                          if (extraTime < minExtraTime) {
-                            minExtraTime = extraTime;
-                            nextStation = station;
-                          }
-                        }
-                      }
-                    );
-                  }
+                  // For each bus stop found
+                  results.forEach((place) => {
+                    // Create a marker on the map
+                    new google.maps.Marker({
+                      map,
+                      position: place.geometry.location,
+                    });
+                  });
                 }
               }
             );
-          }
-
-          // Update UI with details of the next station (if found)
-          if (nextStation) {
-            console.log("Next station:", nextStation.name);
-            // Display station name and estimated time on UI
-          }
+          });
         } else {
           console.error(`error fetching directions ${result}`);
         }
       }
     );
   };
+
+  // const calculateTimeToNextStation = (userLocation) => {
+  //   if (
+  //     directionsRes &&
+  //     directionsRes.routes &&
+  //     directionsRes.routes.length > 0
+  //   ) {
+  //     for (const step of directionsRes.routes[0].legs[0].steps) {
+  //       const distanceToStartLocation = calculateDistance(
+  //         userLocation,
+  //         step.start_location
+  //       );
+  //       if (distanceToStartLocation < 100) {
+  //         const distanceToStation = calculateDistance(
+  //           userLocation,
+  //           step.end_location
+  //         );
+  //         const timeToStation = distanceToStation / averageSpeed;
+  //         return timeToStation.toFixed(2);
+  //       }
+  //     }
+  //   }
+  //   return null;
+  // };
+
+  // const calculateDistance = (point1, point2) => {
+  //   const lat1 = point1.lat;
+  //   const lon1 = point1.lng;
+  //   const lat2 = point2.lat();
+  //   const lon2 = point2.lng();
+  //   const R = 6371; // Radius of the earth in km
+  //   const dLat = deg2rad(lat2 - lat1);
+  //   const dLon = deg2rad(lon2 - lon1);
+  //   const a =
+  //     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+  //     Math.cos(deg2rad(lat1)) *
+  //       Math.cos(deg2rad(lat2)) *
+  //       Math.sin(dLon / 2) *
+  //       Math.sin(dLon / 2);
+  //   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  //   const d = R * c; // Distance in km
+  //   return d;
+  // };
+
+  // const deg2rad = (deg) => {
+  //   return deg * (Math.PI / 180);
+  // };
 
   const clearRoute = () => {
     setDirectionsRes(null);
@@ -175,12 +242,21 @@ const Map = (props) => {
   };
 
   if (loadError) {
-    return <div>Error loading maps</div>;
+    return (
+      <div className="w-full h-screen flex items-center justify-center">
+        Error loading maps
+      </div>
+    );
   }
 
   if (!isLoaded) {
-    return <div>Loading maps</div>;
+    return (
+      <div className="w-full h-screen flex items-center justify-center">
+        Loading ...
+      </div>
+    );
   }
+
   let center = {
     lat: -1.9578755,
     lng: 30.11273499999993,
