@@ -16,10 +16,10 @@ function App() {
   }, []);
   return (
     <div>
-      {/* <Map currentLocation={currentLocation} /> */}
+      <Map currentLocation={currentLocation} />
 
       {/* // This is last one */}
-      <MyMap />
+      {/* <MyMap /> */}
       {/* <Map2 /> */}
     </div>
   );
